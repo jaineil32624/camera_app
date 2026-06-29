@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Colorful Pose & Speech Recorder</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="page-shell">
+        <header class="hero">
+            <div>
+                <h1>Colorful Pose & Speech Recorder</h1>
+                <p>Detect your body in realtime, draw a dynamic head box, record full video, and capture only the audio while you speak.</p>
+            </div>
+            <div class="hero-badge">Beta</div>
+        </header>
+
+        <section class="main-grid">
+            <div class="camera-card">
+                <div class="camera-frame">
+                    <video id="camera" autoplay playsinline muted></video>
+                    <canvas id="overlay"></canvas>
+                </div>
+                <div class="status-panel" id="status">Press Start Session to begin.</div>
+            </div>
+
+            <div class="controls-card">
+                <h2>Controls</h2>
+                <div class="button-row single">
+                    <button id="startSessionBtn">Start Session</button>
+                    <button id="stopSessionBtn" disabled>Stop Session</button>
+                </div>
+                <div class="controls-info">
+                    <p>Start the session to record camera + voice together.</p>
+                    <p>Speech is transcribed live into the transcript panel.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="body-grid">
+            <div class="card body-card">
+                <h2>Body Detection</h2>
+                <div id="bodyInfo" class="body-info">No people detected yet.</div>
+            </div>
+        </section>
+
+        <section class="expression-grid">
+            <div class="card expression-card">
+                <h2>Expression Detection</h2>
+                <div id="expressionInfo" class="expression-info">No expression data yet.</div>
+            </div>
+        </section>
+
+        <section class="info-grid">
+            <div class="card transcript-card">
+                <h2>Speech Transcript</h2>
+                <div id="transcript" class="transcript"></div>
+            </div>
+            <div class="card downloads-card">
+                <h2>Downloads</h2>
+                <div id="downloads" class="downloads"></div>
+            </div>
+        </section>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.12.0/dist/tf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection/dist/pose-detection.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>

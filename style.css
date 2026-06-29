@@ -1,0 +1,280 @@
+body {
+    margin: 0;
+    min-height: 100vh;
+    font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    color: white;
+    background: radial-gradient(circle at top, #1a1c2a 0%, #0c0f1b 45%, #090b10 100%);
+}
+
+.page-shell {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 28px 24px 48px;
+}
+
+.hero {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 24px 30px;
+    border-radius: 28px;
+    background: linear-gradient(135deg, rgba(32, 150, 255, 0.25), rgba(132, 32, 255, 0.18));
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    margin-bottom: 24px;
+}
+
+.hero h1 {
+    margin: 0 0 8px;
+    font-size: clamp(2rem, 2.8vw, 3.4rem);
+    letter-spacing: -0.04em;
+}
+
+.hero p {
+    margin: 0;
+    max-width: 680px;
+    line-height: 1.7;
+    color: rgba(255, 255, 255, 0.85);
+}
+
+.hero-badge {
+    padding: 10px 18px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 999px;
+    color: #a4d4ff;
+    font-weight: 700;
+}
+
+.main-grid,
+.info-grid {
+    display: grid;
+    gap: 20px;
+}
+
+.main-grid {
+    grid-template-columns: 1.6fr 1fr;
+    align-items: start;
+}
+
+.camera-card,
+.controls-card,
+.card {
+    border-radius: 24px;
+    background: rgba(12, 16, 34, 0.92);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    box-shadow: 0 24px 80px rgba(0, 0, 0, 0.2);
+}
+
+.camera-frame {
+    position: relative;
+    overflow: hidden;
+    border-radius: 24px 24px 0 0;
+    background: #05080f;
+}
+
+.camera-frame video,
+.camera-frame canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+.camera-frame {
+    min-height: 420px;
+}
+
+.status-panel {
+    padding: 18px 22px;
+    color: #d3e6ff;
+    font-size: 0.95rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.controls-card {
+    padding: 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.controls-card h2,
+.card h2 {
+    margin: 0 0 12px;
+    color: #c8e1ff;
+}
+
+.button-row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+}
+
+.button-row.single {
+    grid-template-columns: repeat(1, minmax(0, 1fr));
+}
+
+button {
+    border: none;
+    outline: none;
+    cursor: pointer;
+    padding: 16px 18px;
+    border-radius: 16px;
+    font-weight: 700;
+    transition: transform 180ms ease, background 180ms ease, box-shadow 180ms ease;
+    min-height: 56px;
+    color: white;
+    background: linear-gradient(135deg, #246bff, #7731ff);
+    box-shadow: 0 14px 32px rgba(36, 107, 255, 0.24);
+}
+
+button:hover:not(:disabled) {
+    transform: translateY(-2px);
+}
+
+button:disabled {
+    opacity: 0.48;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+.controls-info {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 18px;
+    padding: 16px;
+    color: #a8c8ff;
+    line-height: 1.6;
+}
+
+.info-grid {
+    grid-template-columns: 1.4fr 0.9fr;
+    margin-top: 24px;
+}
+
+.transcript-card,
+.downloads-card {
+    padding: 22px;
+    min-height: 320px;
+}
+
+#transcript {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 16px;
+    min-height: 240px;
+    padding: 18px;
+    overflow: auto;
+    white-space: pre-wrap;
+    color: #d7e7ff;
+}
+
+#downloads {
+    display: grid;
+    gap: 12px;
+}
+
+.body-grid,
+.expression-grid {
+    margin-top: 24px;
+}
+
+.body-card,
+.expression-card {
+    padding: 22px;
+    border-radius: 24px;
+    background: rgba(7, 11, 27, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.body-info,
+.expression-info {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 18px;
+    padding: 18px;
+    min-height: 140px;
+    color: #d8e9ff;
+    line-height: 1.7;
+    white-space: pre-wrap;
+}
+
+.download-link {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    gap: 10px;
+    padding: 16px 18px;
+    border-radius: 16px;
+    background: linear-gradient(135deg, rgba(20, 188, 255, 0.12), rgba(109, 61, 255, 0.12));
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    color: #dce9ff;
+    text-decoration: none;
+}
+
+.download-link.recent-download {
+    background: linear-gradient(135deg, rgba(73, 158, 255, 0.2), rgba(154, 85, 255, 0.2));
+    border-color: rgba(109, 167, 255, 0.3);
+    box-shadow: 0 10px 30px rgba(73, 158, 255, 0.12);
+}
+
+.download-link .download-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: rgba(46, 197, 255, 0.18);
+    color: #d4f2ff;
+    font-size: 0.85rem;
+    font-weight: 700;
+}
+
+.download-link:hover {
+    border-color: rgba(132, 200, 255, 0.3);
+}
+
+@media (max-width: 980px) {
+    .main-grid,
+    .info-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .button-row {
+        grid-template-columns: 1fr;
+    }
+}
+
+#status {
+    margin: 16px auto;
+    max-width: 600px;
+    padding: 10px 14px;
+    background: rgba(0, 0, 0, 0.65);
+    color: #cceeff;
+    border: 1px solid #3399ff;
+    border-radius: 8px;
+    font-size: 14px;
+    text-align: left;
+}
+
+body::before,
+body::after {
+    content: "🎥✨🤖💬";
+    position: fixed;
+    opacity: 0.12;
+    font-size: 6rem;
+    pointer-events: none;
+    z-index: 0;
+}
+
+body::before {
+    top: 8%;
+    left: 6%;
+    transform: rotate(-12deg);
+}
+
+body::after {
+    bottom: 6%;
+    right: 8%;
+    transform: rotate(15deg);
+}
