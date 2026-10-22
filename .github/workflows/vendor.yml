@@ -1,0 +1,46 @@
+name: Vendor offline assets
+
+# Downloads TensorFlow.js, the pose-detection library and the MoveNet
+# multipose model into vendor/ so the site, the installable PWA and the
+# Android APK can run pose detection offline.
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/vendor.yml']
+
+permissions:
+  contents: write
+
+jobs:
+  vendor:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download TensorFlow.js + pose-detection
+        run: |
+          mkdir -p vendor
+          curl -fsSL https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.12.0/dist/tf.min.js -o vendor/tf.min.js
+          curl -fsSL https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection@2.1.3/dist/pose-detection.min.js -o vendor/pose-detection.min.js
+          ls -la vendor
+      - name: Download MoveNet multipose lightning model (optional)
+        run: |
+          BASE="https://tfhub.dev/google/tfjs-model/movenet/multipose/lightning/1"
+          mkdir -p vendor/movenet
+          if curl -fsSL "$BASE/model.json?tfjs-format=file" -o vendor/movenet/model.json; then
+            ok=1
+            for shard in $(python3 -c "import json;m=json.load(open('vendor/movenet/model.json'));print(' '.join(p for g in m['weightsManifest'] for p in g['paths']))"); do
+              curl -fsSL "$BASE/$shard?tfjs-format=file" -o "vendor/movenet/$shard" || ok=0
+            done
+            [ "$ok" = 1 ] || { echo "model shards unavailable - skipping"; rm -rf vendor/movenet; }
+          else
+            echo "model unavailable - skipping"; rm -rf vendor/movenet
+          fi
+          ls -laR vendor
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898299+github-actions[bot]@users.noreply.github.com"
+          git add vendor
+          git diff --cached --quiet || git commit -m "Vendor TensorFlow.js, pose-detection and MoveNet for offline use"
+          git push
