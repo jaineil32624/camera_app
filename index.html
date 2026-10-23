@@ -2,39 +2,163 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Colorful Pose & Speech Recorder</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Camera App — Colorful Pose & Speech Recorder</title>
+    <meta name="description" content="Camera App: a colorful browser camera with live filters, timer, burst, grid, zoom, video recording, an offline gallery and AI pose + speech sessions.">
+    <meta name="theme-color" content="#0c0f1b">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Camera App">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Camera App — Colorful Pose & Speech Recorder">
+    <meta property="og:description" content="Live filters, timer, burst, zoom, video recording, an offline gallery and AI pose + speech sessions — right in your browser.">
+    <meta property="og:image" content="https://jaineil32624.github.io/camera_app/docs/screenshots/social.png">
+    <meta property="og:url" content="https://jaineil32624.github.io/camera_app/">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Camera App — Colorful Pose & Speech Recorder">
+    <meta name="twitter:description" content="Live filters, timer, burst, zoom, video recording, an offline gallery and AI pose + speech sessions.">
+    <meta name="twitter:image" content="https://jaineil32624.github.io/camera_app/docs/screenshots/social.png">
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+    <link rel="icon" href="icons/icon-192.png" type="image/png" sizes="192x192">
+    <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="page-shell">
         <header class="hero">
-            <div>
+            <div class="hero-text">
+                <div class="hero-kicker"><img src="icons/icon.svg" alt="" width="34" height="34"> Camera App</div>
                 <h1>Colorful Pose & Speech Recorder</h1>
-                <p>Detect your body in realtime, draw a dynamic head box, record full video, and capture only the audio while you speak.</p>
+                <p>Snap photos with live filters, shoot video, and run AI sessions that detect your body in realtime, draw a dynamic head box and transcribe what you say.</p>
             </div>
-            <div class="hero-badge">Beta</div>
+            <div class="hero-side">
+                <div class="hero-badge">Beta</div>
+                <div class="hero-actions">
+                    <button class="ghost-btn" id="helpBtn" title="Shortcuts & help (?)" aria-label="Shortcuts and help">⌨️ <span class="lbl">Shortcuts</span></button>
+                    <button class="ghost-btn" id="installBtn" title="Get the app" aria-label="Get the app">⬇ <span class="lbl">Get the app</span></button>
+                </div>
+            </div>
         </header>
 
         <section class="main-grid">
             <div class="camera-card">
-                <div class="camera-frame">
-                    <video id="camera" autoplay playsinline muted></video>
-                    <canvas id="overlay"></canvas>
+                <div class="camera-frame" id="frame">
+                    <div class="zoom-layer" id="zoomLayer">
+                        <video id="camera" autoplay playsinline muted></video>
+                        <canvas id="overlay"></canvas>
+                    </div>
+                    <div class="grid-overlay" id="gridOverlay" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+                    <div class="flash" id="flash" aria-hidden="true"></div>
+                    <div class="countdown" id="countdown" aria-live="assertive"></div>
+
+                    <div class="frame-top">
+                        <span class="pill rec-pill" id="recPill" hidden><span class="dot"></span><span id="recTime">00:00</span></span>
+                        <span class="pill" id="filterPill">Original</span>
+                        <span class="pill zoom-pill" id="zoomPill" role="button" tabindex="0" title="Reset zoom">1.0×</span>
+                    </div>
+
+                    <div class="frame-tools" id="frameTools">
+                        <button class="icon-btn" id="flipBtn" title="Switch camera (F)" aria-label="Switch front / back camera">🔄</button>
+                        <button class="icon-btn" id="gridBtn" title="Grid overlay (G)" aria-label="Toggle grid" aria-pressed="false">#</button>
+                        <button class="icon-btn" id="mirrorBtn" title="Mirror preview (M)" aria-label="Toggle mirror" aria-pressed="true">⇋</button>
+                        <button class="icon-btn" id="torchBtn" title="Torch" aria-label="Toggle torch" aria-pressed="false" hidden>🔦</button>
+                        <button class="icon-btn" id="poseBtn" title="AI pose overlay (A)" aria-label="Toggle AI pose overlay" aria-pressed="false">🤖</button>
+                    </div>
+
+                    <div class="cam-state" id="camState">
+                        <div class="cam-state-box">
+                            <div class="cam-state-icon" id="stateIcon">📷</div>
+                            <h3 id="stateTitle">Ready when you are</h3>
+                            <p id="stateText">Turn on your camera to start snapping photos, recording video or running an AI session.</p>
+                            <div class="cam-state-actions">
+                                <button id="stateBtn">Turn on camera</button>
+                                <button class="ghost-btn" id="stateGalleryBtn">Open gallery</button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div class="status-panel" id="status">Press Start Session to begin.</div>
+
+                <div class="shutter-bar">
+                    <div class="mode-tabs" role="tablist" aria-label="Camera mode">
+                        <button role="tab" data-mode="photo" class="mode-tab">📸 Photo</button>
+                        <button role="tab" data-mode="video" class="mode-tab">🎬 Video</button>
+                        <button role="tab" data-mode="session" class="mode-tab">🤖 AI Session</button>
+                    </div>
+                    <div class="shutter-row">
+                        <button class="last-shot" id="lastShot" title="Open gallery (L)" aria-label="Open last capture"><span>🖼️</span></button>
+                        <button class="shutter" id="shutter" title="Shutter (Space)" aria-label="Take photo"><span class="shutter-core"></span></button>
+                        <button class="icon-btn pause-btn" id="pauseBtn" title="Pause / resume recording" aria-label="Pause recording" hidden>❚❚</button>
+                        <div class="zoom-wrap" id="zoomWrap">
+                            <label for="zoomSlider" class="sr">Zoom</label>
+                            <input type="range" id="zoomSlider" min="1" max="4" step="0.1" value="1">
+                        </div>
+                    </div>
+                </div>
+                <div class="status-panel" id="status">Press Turn on camera to begin.</div>
             </div>
 
             <div class="controls-card">
                 <h2>Controls</h2>
-                <div class="button-row single">
-                    <button id="startSessionBtn">Start Session</button>
-                    <button id="stopSessionBtn" disabled>Stop Session</button>
+
+                <div class="control-group" id="sessionGroup">
+                    <div class="group-label">AI session</div>
+                    <div class="button-row single">
+                        <button id="startSessionBtn">Start Session</button>
+                        <button id="stopSessionBtn" disabled>Stop Session</button>
+                    </div>
                 </div>
-                <div class="controls-info">
+
+                <div class="control-group">
+                    <div class="group-label">Filters <kbd>[</kbd> <kbd>]</kbd></div>
+                    <div class="filter-strip" id="filterStrip" role="listbox" aria-label="Filters"></div>
+                </div>
+
+                <div class="control-group two">
+                    <div>
+                        <div class="group-label">Timer <kbd>T</kbd></div>
+                        <div class="seg" id="timerSeg">
+                            <button data-v="0">Off</button><button data-v="3">3s</button><button data-v="10">10s</button>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="group-label">Burst <kbd>B</kbd></div>
+                        <div class="seg" id="burstSeg">
+                            <button data-v="1">1</button><button data-v="3">3</button><button data-v="5">5</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <div class="toggle-list">
+                        <label class="toggle"><input type="checkbox" id="audioToggle"><span>🎙️ Record sound with video</span></label>
+                        <label class="toggle"><input type="checkbox" id="soundToggle"><span>🔊 Shutter &amp; countdown sounds</span></label>
+                        <label class="toggle"><input type="checkbox" id="stampToggle"><span>🤖 Burn AI overlay into photos</span></label>
+                    </div>
+                </div>
+
+                <div class="controls-info" id="modeInfo">
                     <p>Start the session to record camera + voice together.</p>
                     <p>Speech is transcribed live into the transcript panel.</p>
                 </div>
+                <button class="ghost-btn wide" id="shareSetupBtn">🔗 Copy link to this setup</button>
+            </div>
+        </section>
+
+        <section class="gallery-grid">
+            <div class="card gallery-card">
+                <div class="card-head">
+                    <h2>Gallery</h2>
+                    <span class="gallery-stats" id="galleryStats">No captures yet</span>
+                    <div class="card-head-actions">
+                        <div class="seg small" id="galleryFilter">
+                            <button data-v="all" class="on">All</button><button data-v="photo">Photos</button><button data-v="video">Videos</button>
+                        </div>
+                        <button class="ghost-btn small" id="clearGalleryBtn">🗑 Clear</button>
+                    </div>
+                </div>
+                <div id="gallery" class="gallery"></div>
             </div>
         </section>
 
@@ -59,13 +183,15 @@
             </div>
             <div class="card downloads-card">
                 <h2>Downloads</h2>
-                <div id="downloads" class="downloads"></div>
+                <div id="downloads" class="downloads"><p class="empty-note">Session recordings appear here.</p></div>
             </div>
         </section>
+
+        <footer class="foot">Made by Jaineil Rana · Photos and videos stay on your device.</footer>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.12.0/dist/tf.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection/dist/pose-detection.min.js"></script>
+    <div class="toast-wrap" id="toasts" aria-live="polite"></div>
+
     <script src="script.js"></script>
 </body>
 </html>

@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="512" y2="512" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#2a7bff"/>
+      <stop offset="1" stop-color="#7a2dff"/>
+    </linearGradient>
+    <linearGradient id="body" x1="96" y1="150" x2="416" y2="410" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#1a2140"/>
+      <stop offset="1" stop-color="#0a0d1a"/>
+    </linearGradient>
+    <linearGradient id="ring" x1="166" y1="170" x2="346" y2="370" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffcc33"/>
+      <stop offset="0.35" stop-color="#ff4a77"/>
+      <stop offset="0.7" stop-color="#9b5cff"/>
+      <stop offset="1" stop-color="#38d7ff"/>
+    </linearGradient>
+    <radialGradient id="glass" cx="230" cy="245" r="110" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#3b5bd6"/>
+      <stop offset="0.55" stop-color="#14204f"/>
+      <stop offset="1" stop-color="#050812"/>
+    </radialGradient>
+    <clipPath id="clip"><rect width="512" height="512" rx="112"/></clipPath>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+  <circle cx="410" cy="96" r="120" fill="#ffffff" opacity="0.08" clip-path="url(#clip)"/>
+  <!-- camera body -->
+  <path d="M188 138 L208 108 Q214 98 226 98 H286 Q298 98 304 108 L324 138 H384 Q416 138 416 170 V370 Q416 402 384 402 H128 Q96 402 96 370 V170 Q96 138 128 138 Z" fill="url(#body)"/>
+  <rect x="122" y="158" width="44" height="18" rx="9" fill="#ffffff" opacity="0.18"/>
+  <circle cx="374" cy="174" r="11" fill="#ffcc33"/>
+  <!-- lens -->
+  <circle cx="256" cy="272" r="104" fill="url(#ring)"/>
+  <circle cx="256" cy="272" r="84" fill="#070a14"/>
+  <circle cx="256" cy="272" r="70" fill="url(#glass)"/>
+  <circle cx="256" cy="272" r="30" fill="#050812"/>
+  <circle cx="228" cy="244" r="16" fill="#ffffff" opacity="0.85"/>
+  <circle cx="284" cy="302" r="7" fill="#ffffff" opacity="0.45"/>
+</svg>

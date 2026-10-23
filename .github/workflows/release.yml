@@ -1,0 +1,237 @@
+name: Build Android APK & Release
+
+# Bump the number in VERSION (e.g. 1.1.0) and push to main — or push a
+# tag like v1.2.0, or run it manually — to build the Android app with
+# Capacitor and publish a GitHub Release containing:
+#   • CameraApp.apk         – install directly on Android
+#   • CameraApp-web.zip     – the full offline web app (open index.html)
+on:
+  push:
+    branches: [main]
+    paths: ['VERSION', '.github/workflows/release.yml']
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Version info
+        id: ver
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          [[ "$TAG" == v* ]] || TAG="v$(tr -d ' \n' < VERSION)"
+          NAME="${TAG#v}"
+          IFS=. read -r MA MI PA <<< "$NAME"
+          CODE=$(( ${MA:-1} * 10000 + ${MI:-0} * 100 + ${PA:-0} ))
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          echo "name=$NAME" >> $GITHUB_OUTPUT
+          echo "code=$CODE" >> $GITHUB_OUTPUT
+
+      - name: Collect web app into www/
+        run: |
+          mkdir -p build/www
+          cp -r index.html style.css script.js sw.js manifest.webmanifest icons vendor build/www/
+          cd build/www && zip -qr ../../CameraApp-web.zip .
+
+      - name: Create Capacitor Android project
+        working-directory: build
+        run: |
+          npm init -y >/dev/null
+          npm install --no-audit --no-fund @capacitor/core@6 @capacitor/cli@6 @capacitor/android@6
+          cat > capacitor.config.json <<'EOF'
+          {
+            "appId": "io.github.jaineil32624.cameraapp",
+            "appName": "Camera App",
+            "webDir": "www",
+            "backgroundColor": "#0c0f1b",
+            "android": { "backgroundColor": "#0c0f1b" },
+            "server": { "androidScheme": "https" }
+          }
+          EOF
+          npx cap add android
+          npx cap sync android
+
+      - name: Camera & microphone permissions + native helpers
+        working-directory: build/android
+        run: |
+          set -euxo pipefail
+          python3 - <<'PY'
+          p = "app/src/main/AndroidManifest.xml"
+          s = open(p).read()
+          add = ('    <uses-permission android:name="android.permission.CAMERA" />\n'
+                 '    <uses-permission android:name="android.permission.RECORD_AUDIO" />\n'
+                 '    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />\n'
+                 '    <uses-feature android:name="android.hardware.camera" android:required="false" />\n'
+                 '    <uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />\n'
+                 '    <uses-feature android:name="android.hardware.microphone" android:required="false" />\n')
+          if "android.permission.CAMERA" not in s:
+              s = s.replace("</manifest>", add + "</manifest>")
+          open(p, "w").write(s)
+          print(s)
+          PY
+          MAIN=$(find app/src/main/java -name MainActivity.java | head -1)
+          test -n "$MAIN"
+          cat > "$MAIN" <<'JAVA'
+          package io.github.jaineil32624.cameraapp;
+
+          import android.Manifest;
+          import android.content.ContentValues;
+          import android.content.pm.PackageManager;
+          import android.net.Uri;
+          import android.os.Build;
+          import android.os.Bundle;
+          import android.os.Environment;
+          import android.provider.MediaStore;
+          import android.util.Base64;
+          import android.webkit.JavascriptInterface;
+          import android.webkit.WebView;
+          import androidx.core.app.ActivityCompat;
+          import androidx.core.content.ContextCompat;
+          import com.getcapacitor.BridgeActivity;
+          import java.io.File;
+          import java.io.FileOutputStream;
+          import java.io.OutputStream;
+
+          public class MainActivity extends BridgeActivity {
+              private static final int REQ = 4242;
+
+              @Override
+              public void onCreate(Bundle savedInstanceState) {
+                  super.onCreate(savedInstanceState);
+                  WebView wv = getBridge() != null ? getBridge().getWebView() : null;
+                  if (wv != null) wv.addJavascriptInterface(new Saver(), "AndroidSaver");
+                  String[] perms = { Manifest.permission.CAMERA, Manifest.permission.RECORD_AUDIO };
+                  boolean need = false;
+                  for (String p : perms) {
+                      if (ContextCompat.checkSelfPermission(this, p) != PackageManager.PERMISSION_GRANTED) need = true;
+                  }
+                  if (need) ActivityCompat.requestPermissions(this, perms, REQ);
+              }
+
+              @Override
+              public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+                  super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+                  if (requestCode == REQ && getBridge() != null && getBridge().getWebView() != null) {
+                      final WebView wv = getBridge().getWebView();
+                      wv.post(() -> wv.evaluateJavascript("window.dispatchEvent(new Event('androidpermissions'))", null));
+                  }
+              }
+
+              /** Lets the web app save photos/videos, since blob: downloads don't work in a WebView. */
+              public class Saver {
+                  @JavascriptInterface
+                  public String save(String base64, String name, String mime) {
+                      try {
+                          byte[] data = Base64.decode(base64, Base64.DEFAULT);
+                          boolean image = mime != null && mime.startsWith("image/");
+                          boolean video = mime != null && mime.startsWith("video/");
+                          if (Build.VERSION.SDK_INT >= 29) {
+                              ContentValues v = new ContentValues();
+                              v.put(MediaStore.MediaColumns.DISPLAY_NAME, name);
+                              v.put(MediaStore.MediaColumns.MIME_TYPE, mime);
+                              String dir = image ? Environment.DIRECTORY_PICTURES + "/Camera App"
+                                      : video ? Environment.DIRECTORY_MOVIES + "/Camera App"
+                                      : Environment.DIRECTORY_DOWNLOADS;
+                              v.put(MediaStore.MediaColumns.RELATIVE_PATH, dir);
+                              Uri coll = image ? MediaStore.Images.Media.EXTERNAL_CONTENT_URI
+                                      : video ? MediaStore.Video.Media.EXTERNAL_CONTENT_URI
+                                      : MediaStore.Downloads.EXTERNAL_CONTENT_URI;
+                              Uri uri = getContentResolver().insert(coll, v);
+                              if (uri == null) return "";
+                              try (OutputStream os = getContentResolver().openOutputStream(uri)) { os.write(data); }
+                              return dir;
+                          } else {
+                              File dir = getExternalFilesDir(image ? Environment.DIRECTORY_PICTURES
+                                      : video ? Environment.DIRECTORY_MOVIES : Environment.DIRECTORY_DOWNLOADS);
+                              if (dir == null) dir = getFilesDir();
+                              if (!dir.exists()) dir.mkdirs();
+                              File f = new File(dir, name);
+                              try (FileOutputStream os = new FileOutputStream(f)) { os.write(data); }
+                              return f.getAbsolutePath();
+                          }
+                      } catch (Exception e) {
+                          return "";
+                      }
+                  }
+              }
+          }
+          JAVA
+          sed -i 's/^          //' "$MAIN"
+          head -5 "$MAIN"
+
+      - name: App icons, splash & version
+        working-directory: build/android
+        run: |
+          set -euxo pipefail
+          python3 -m pip install --quiet pillow
+          python3 - <<'PY'
+          import os, glob
+          from PIL import Image
+          res = "app/src/main/res"
+          icon = Image.open("../../icons/icon-1024.png").convert("RGBA")
+          import shutil
+          shutil.rmtree(os.path.join(res, "mipmap-anydpi-v26"), ignore_errors=True)
+          for d, s in {"mdpi": 48, "hdpi": 72, "xhdpi": 96, "xxhdpi": 144, "xxxhdpi": 192}.items():
+              out = os.path.join(res, "mipmap-" + d); os.makedirs(out, exist_ok=True)
+              im = icon.resize((s, s), Image.LANCZOS)
+              for n in ("ic_launcher.png", "ic_launcher_round.png"): im.save(os.path.join(out, n))
+              fg = os.path.join(out, "ic_launcher_foreground.png")
+              if os.path.exists(fg): os.remove(fg)
+          for f in glob.glob(os.path.join(res, "**", "splash.png"), recursive=True):
+              w, h = Image.open(f).size; s = min(w, h) // 3
+              bg = Image.new("RGB", (w, h), "#0c0f1b")
+              ic = icon.resize((s, s), Image.LANCZOS); bg.paste(ic, ((w - s) // 2, (h - s) // 2), ic)
+              bg.save(f)
+          print("icons + splash done")
+          PY
+          sed -i "s/versionCode [0-9]*/versionCode ${{ steps.ver.outputs.code }}/; s/versionName \"[^\"]*\"/versionName \"${{ steps.ver.outputs.name }}\"/" app/build.gradle
+          grep -E "versionCode|versionName|applicationId" app/build.gradle
+
+      - name: Build APK
+        working-directory: build/android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon -q
+          cp app/build/outputs/apk/debug/app-debug.apk ../../CameraApp.apk
+          ls -la ../../CameraApp.apk
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.ver.outputs.tag }}
+          name: Camera App ${{ steps.ver.outputs.tag }}
+          make_latest: true
+          files: |
+            CameraApp.apk
+            CameraApp-web.zip
+          body: |
+            ## 📷 Camera App ${{ steps.ver.outputs.tag }} — Colorful Pose & Speech Recorder
+
+            | | |
+            |---|---|
+            | 🤖 **Android** | Download **CameraApp.apk** below → open it → allow *Install unknown apps* if asked → allow Camera |
+            | 🌐 **Web** | Open **https://jaineil32624.github.io/camera_app/** |
+            | 💻 **Install as an app** | Open the website in Chrome/Edge → ⬇ *Get the app* → *Install* |
+            | 🍎 **iPhone / iPad** | Open the website in Safari → Share → *Add to Home Screen* |
+            | 📦 **Offline zip** | Unzip **CameraApp-web.zip** and serve it locally (cameras need https or localhost) |
+
+            📸 live filters · ⏱️ timer & burst · 🎬 video recording · 🔍 zoom · 🖼️ offline gallery · 🤖 AI pose + speech sessions — no account, no ads, captures stay on your device.
